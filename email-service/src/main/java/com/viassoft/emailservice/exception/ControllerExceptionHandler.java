@@ -1,5 +1,6 @@
 package com.viassoft.emailservice.exception;
 
+import com.viassoft.emailservice.util.EmailServiceConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ public class ControllerExceptionHandler {
         StandardError error = StandardError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
-                .error("Validation Error")
+                .error(EmailServiceConstants.VALIDATION_ERROR)
                 .message(ex.getFieldError().getDefaultMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -29,7 +30,7 @@ public class ControllerExceptionHandler {
         StandardError error = StandardError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
-                .error("Invalid Argument")
+                .error(EmailServiceConstants.INVALID_ARGUMENT)
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -41,7 +42,7 @@ public class ControllerExceptionHandler {
         StandardError error = StandardError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Runtime Exception")
+                .error(EmailServiceConstants.RUNTIME_EXCEPTION)
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -53,7 +54,7 @@ public class ControllerExceptionHandler {
         StandardError error = StandardError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
+                .error(EmailServiceConstants.INTERNAL_SERVER_ERROR)
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();

@@ -12,4 +12,3 @@ public class EmailAwsDTO {
     private String subject;
     private String content;
 }
-

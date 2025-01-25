@@ -10,6 +10,7 @@ import com.viassoft.emailservice.entity.enums.EmailStatus;
 import com.viassoft.emailservice.entity.enums.IntegrationLimitsEnum;
 import com.viassoft.emailservice.repository.EmailAuditRepository;
 import com.viassoft.emailservice.service.EmailService;
+import com.viassoft.emailservice.util.EmailServiceConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,12 +45,12 @@ public class EmailServiceImpl implements EmailService {
                 this.logToConsole(ociDTO);
                 this.saveAudit(request, EmailStatus.SUCCESS, null);
             } else {
-                throw new IllegalArgumentException("Invalid mail integration configuration");
+                throw new IllegalArgumentException(EmailServiceConstants.INVALID_INTEGRATION_TYPE);
             }
         } catch (Exception ex) {
-            log.error("Error processing email: {}", ex.getMessage());
+            log.error(EmailServiceConstants.EMAIL_AUDIT_FAILURE, ex.getMessage());
             this.saveAudit(request, EmailStatus.FAILURE, ex.getMessage());
-            throw new RuntimeException("Error processing email: " + ex.getMessage());
+            throw new RuntimeException(EmailServiceConstants.PROCESSING_ERROR + ": " + ex.getMessage());
         }
     }
 
@@ -80,7 +81,7 @@ public class EmailServiceImpl implements EmailService {
 
     private void logToConsole(Object dto) throws JsonProcessingException {
         String json = objectMapper.writeValueAsString(dto);
-        log.info("Serialized email DTO: {}", json);
+        log.info(EmailServiceConstants.EMAIL_AUDIT_SUCCESS, json);
     }
 
     private void saveAudit(EmailRequestDTO request, EmailStatus status, String errorMessage) {
@@ -111,9 +112,8 @@ public class EmailServiceImpl implements EmailService {
     private void checkFieldLength(String fieldName, String value, int maxLength) {
         if (value.length() > maxLength) {
             throw new IllegalArgumentException(
-                    String.format("%s: %s must not exceed %d characters", mailIntegration.toUpperCase(), fieldName, maxLength)
+                    String.format(EmailServiceConstants.FIELD_EXCEEDS_LIMIT, mailIntegration.toUpperCase(), fieldName, maxLength)
             );
         }
     }
-
 }
