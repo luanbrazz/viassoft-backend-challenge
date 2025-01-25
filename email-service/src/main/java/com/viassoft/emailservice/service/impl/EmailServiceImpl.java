@@ -7,6 +7,7 @@ import com.viassoft.emailservice.dto.EmailOciDTO;
 import com.viassoft.emailservice.dto.EmailRequestDTO;
 import com.viassoft.emailservice.entity.EmailAudit;
 import com.viassoft.emailservice.entity.enums.EmailStatus;
+import com.viassoft.emailservice.entity.enums.IntegrationLimitsEnum;
 import com.viassoft.emailservice.repository.EmailAuditRepository;
 import com.viassoft.emailservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -32,15 +33,15 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void processEmail(EmailRequestDTO request) {
         try {
+            this.validateRequest(request, mailIntegration);
+
             if ("AWS".equalsIgnoreCase(mailIntegration)) {
-                this.validateAwsRequest(request);
                 EmailAwsDTO awsDTO = adaptToAws(request);
                 this.logToConsole(awsDTO);
                 this.saveAudit(request, EmailStatus.SUCCESS, null);
             } else if ("OCI".equalsIgnoreCase(mailIntegration)) {
-                this.validateOciRequest(request);
                 EmailOciDTO ociDTO = adaptToOci(request);
-                logToConsole(ociDTO);
+                this.logToConsole(ociDTO);
                 this.saveAudit(request, EmailStatus.SUCCESS, null);
             } else {
                 throw new IllegalArgumentException("Invalid mail integration configuration");
@@ -98,39 +99,21 @@ public class EmailServiceImpl implements EmailService {
         emailAuditRepository.save(emailAudit);
     }
 
-    private void validateAwsRequest(EmailRequestDTO request) {
-        if (request.getRecipient().length() > 45) {
-            throw new IllegalArgumentException("AWS: Recipient email must not exceed 45 characters");
-        }
-        if (request.getRecipientName().length() > 60) {
-            throw new IllegalArgumentException("AWS: Recipient name must not exceed 60 characters");
-        }
-        if (request.getSender().length() > 45) {
-            throw new IllegalArgumentException("AWS: Sender email must not exceed 45 characters");
-        }
-        if (request.getSubject().length() > 120) {
-            throw new IllegalArgumentException("AWS: Subject must not exceed 120 characters");
-        }
-        if (request.getContent().length() > 256) {
-            throw new IllegalArgumentException("AWS: Content must not exceed 256 characters");
+    private void validateRequest(EmailRequestDTO request, String integrationType) {
+        IntegrationLimitsEnum limits = IntegrationLimitsEnum.valueOf(integrationType.toUpperCase());
+        checkFieldLength("recipient", request.getRecipient(), limits.getLimit("recipient"));
+        checkFieldLength("recipientName", request.getRecipientName(), limits.getLimit("recipientName"));
+        checkFieldLength("sender", request.getSender(), limits.getLimit("sender"));
+        checkFieldLength("subject", request.getSubject(), limits.getLimit("subject"));
+        checkFieldLength("content", request.getContent(), limits.getLimit("content"));
+    }
+
+    private void checkFieldLength(String fieldName, String value, int maxLength) {
+        if (value.length() > maxLength) {
+            throw new IllegalArgumentException(
+                    String.format("%s: %s must not exceed %d characters", mailIntegration.toUpperCase(), fieldName, maxLength)
+            );
         }
     }
 
-    private void validateOciRequest(EmailRequestDTO request) {
-        if (request.getRecipient().length() > 40) {
-            throw new IllegalArgumentException("OCI: Recipient email must not exceed 40 characters");
-        }
-        if (request.getRecipientName().length() > 50) {
-            throw new IllegalArgumentException("OCI: Recipient name must not exceed 50 characters");
-        }
-        if (request.getSender().length() > 40) {
-            throw new IllegalArgumentException("OCI: Sender email must not exceed 40 characters");
-        }
-        if (request.getSubject().length() > 100) {
-            throw new IllegalArgumentException("OCI: Subject must not exceed 100 characters");
-        }
-        if (request.getContent().length() > 250) {
-            throw new IllegalArgumentException("OCI: Content must not exceed 250 characters");
-        }
-    }
 }
