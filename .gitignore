@@ -1,0 +1,29 @@
+# Ignorar volumes do MySQL
+email-service/docker-conf/mysql/data/
+
+# Ignorar sockets do MySQL
+email-service/docker-conf/mysql/data/mysql.sock
+
+# Ignorar arquivos temporários do InnoDB
+email-service/docker-conf/mysql/data/#*
+
+# Ignorar redo logs do MySQL
+email-service/docker-conf/mysql/data/#innodb_redo/
+
+# Ignorar arquivos temporários do MySQL
+email-service/docker-conf/mysql/data/#innodb_temp/
+
+# Ignorar logs binários
+email-service/docker-conf/mysql/data/binlog.*
+
+# Ignorar certificados e chaves do MySQL
+email-service/docker-conf/mysql/data/*.pem
+
+# Ignorar undo logs
+email-service/docker-conf/mysql/data/undo_*
+
+# Ignorar tudo que está no volume "sys" do MySQL
+email-service/docker-conf/mysql/data/sys/
+
+# Não ignore o arquivo docker-compose.yml
+!email-service/docker-compose.yml

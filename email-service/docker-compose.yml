@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_viassoft
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: viassoftdb
+      MYSQL_USER: viassoft
+      MYSQL_PASSWORD: viassoft
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./docker-conf/mysql/data:/var/lib/mysql
+    networks:
+      - viassoft
+
+networks:
+  viassoft:
