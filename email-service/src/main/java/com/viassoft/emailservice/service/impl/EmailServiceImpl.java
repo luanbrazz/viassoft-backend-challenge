@@ -33,19 +33,21 @@ public class EmailServiceImpl implements EmailService {
     public void processEmail(EmailRequestDTO request) {
         try {
             if ("AWS".equalsIgnoreCase(mailIntegration)) {
+                this.validateAwsRequest(request);
                 EmailAwsDTO awsDTO = adaptToAws(request);
-                logToConsole(awsDTO);
-                saveAudit(request, EmailStatus.SUCCESS, null);
+                this.logToConsole(awsDTO);
+                this.saveAudit(request, EmailStatus.SUCCESS, null);
             } else if ("OCI".equalsIgnoreCase(mailIntegration)) {
+                this.validateOciRequest(request);
                 EmailOciDTO ociDTO = adaptToOci(request);
                 logToConsole(ociDTO);
-                saveAudit(request, EmailStatus.SUCCESS, null);
+                this.saveAudit(request, EmailStatus.SUCCESS, null);
             } else {
                 throw new IllegalArgumentException("Invalid mail integration configuration");
             }
         } catch (Exception ex) {
             log.error("Error processing email: {}", ex.getMessage());
-            saveAudit(request, EmailStatus.FAILURE, ex.getMessage());
+            this.saveAudit(request, EmailStatus.FAILURE, ex.getMessage());
             throw new RuntimeException("Error processing email: " + ex.getMessage());
         }
     }
@@ -94,5 +96,41 @@ public class EmailServiceImpl implements EmailService {
                 .build();
 
         emailAuditRepository.save(emailAudit);
+    }
+
+    private void validateAwsRequest(EmailRequestDTO request) {
+        if (request.getRecipient().length() > 45) {
+            throw new IllegalArgumentException("AWS: Recipient email must not exceed 45 characters");
+        }
+        if (request.getRecipientName().length() > 60) {
+            throw new IllegalArgumentException("AWS: Recipient name must not exceed 60 characters");
+        }
+        if (request.getSender().length() > 45) {
+            throw new IllegalArgumentException("AWS: Sender email must not exceed 45 characters");
+        }
+        if (request.getSubject().length() > 120) {
+            throw new IllegalArgumentException("AWS: Subject must not exceed 120 characters");
+        }
+        if (request.getContent().length() > 256) {
+            throw new IllegalArgumentException("AWS: Content must not exceed 256 characters");
+        }
+    }
+
+    private void validateOciRequest(EmailRequestDTO request) {
+        if (request.getRecipient().length() > 40) {
+            throw new IllegalArgumentException("OCI: Recipient email must not exceed 40 characters");
+        }
+        if (request.getRecipientName().length() > 50) {
+            throw new IllegalArgumentException("OCI: Recipient name must not exceed 50 characters");
+        }
+        if (request.getSender().length() > 40) {
+            throw new IllegalArgumentException("OCI: Sender email must not exceed 40 characters");
+        }
+        if (request.getSubject().length() > 100) {
+            throw new IllegalArgumentException("OCI: Subject must not exceed 100 characters");
+        }
+        if (request.getContent().length() > 250) {
+            throw new IllegalArgumentException("OCI: Content must not exceed 250 characters");
+        }
     }
 }
