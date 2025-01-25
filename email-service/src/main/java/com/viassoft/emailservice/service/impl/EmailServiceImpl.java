@@ -3,11 +3,12 @@ package com.viassoft.emailservice.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viassoft.emailservice.dto.EmailAwsDTO;
+import com.viassoft.emailservice.dto.EmailOciDTO;
 import com.viassoft.emailservice.dto.EmailRequestDTO;
 import com.viassoft.emailservice.service.EmailService;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -26,6 +27,9 @@ public class EmailServiceImpl implements EmailService {
             if ("AWS".equalsIgnoreCase(mailIntegration)) {
                 EmailAwsDTO awsDTO = adaptToAws(request);
                 logToConsole(awsDTO);
+            } else if ("OCI".equalsIgnoreCase(mailIntegration)) {
+                EmailOciDTO ociDTO = adaptToOci(request);
+                logToConsole(ociDTO);
             } else {
                 throw new IllegalArgumentException("Invalid mail integration configuration");
             }
@@ -42,6 +46,16 @@ public class EmailServiceImpl implements EmailService {
                 .sender(request.getSender())
                 .subject(request.getSubject())
                 .content(request.getContent())
+                .build();
+    }
+
+    private EmailOciDTO adaptToOci(EmailRequestDTO request) {
+        return EmailOciDTO.builder()
+                .recipientEmail(request.getRecipient())
+                .recipientName(request.getRecipientName())
+                .senderEmail(request.getSender())
+                .subject(request.getSubject())
+                .body(request.getContent())
                 .build();
     }
 
