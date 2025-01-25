@@ -12,6 +12,8 @@ import com.viassoft.emailservice.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -46,6 +48,11 @@ public class EmailServiceImpl implements EmailService {
             saveAudit(request, EmailStatus.FAILURE, ex.getMessage());
             throw new RuntimeException("Error processing email: " + ex.getMessage());
         }
+    }
+
+    @Override
+    public Page<EmailAudit> findEmailsByStatus(EmailStatus status, Pageable pageable) {
+        return emailAuditRepository.findByStatus(status, pageable);
     }
 
     private EmailAwsDTO adaptToAws(EmailRequestDTO request) {
