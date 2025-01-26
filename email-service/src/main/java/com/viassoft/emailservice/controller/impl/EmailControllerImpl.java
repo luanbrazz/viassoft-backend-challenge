@@ -28,7 +28,7 @@ public class EmailControllerImpl implements EmailController {
     public ResponseEntity<Void> sendEmail(@Valid @RequestBody EmailRequestDTO request) {
         log.info(EmailServiceConstants.PROCESSING_EMAIL_LOG, request);
         emailService.processEmail(request);
-        return null;
+        return ResponseEntity.noContent().build();
     }
 
     @Override
