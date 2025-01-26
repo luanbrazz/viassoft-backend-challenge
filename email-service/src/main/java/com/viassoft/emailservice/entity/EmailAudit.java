@@ -21,16 +21,16 @@ public class EmailAudit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 45)
+    @Column(nullable = false, length = 256)
     private String recipient;
 
-    @Column(nullable = false, length = 60)
+    @Column(nullable = false, length = 256)
     private String recipientName;
 
-    @Column(nullable = false, length = 45)
+    @Column(nullable = false, length = 256)
     private String sender;
 
-    @Column(nullable = false, length = 120)
+    @Column(nullable = false, length = 256)
     private String subject;
 
     @Column(nullable = false, length = 256)
@@ -46,6 +46,6 @@ public class EmailAudit {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 20)
     private String integrationType;
 }

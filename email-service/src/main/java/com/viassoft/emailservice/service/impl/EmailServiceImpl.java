@@ -14,6 +14,7 @@ import com.viassoft.emailservice.util.EmailServiceConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,26 +32,24 @@ public class EmailServiceImpl implements EmailService {
     private final ObjectMapper objectMapper;
     private final EmailAuditRepository emailAuditRepository;
 
+    /**
+     * Overwrites the mailIntegration value during testing.
+     */
+    public void setMailIntegrationForTest(String mailIntegration) {
+        this.mailIntegration = mailIntegration;
+    }
+
     @Override
     public void processEmail(EmailRequestDTO request) {
         try {
-            this.validateRequest(request, mailIntegration);
-
-            if ("AWS".equalsIgnoreCase(mailIntegration)) {
-                EmailAwsDTO awsDTO = adaptToAws(request);
-                this.logToConsole(awsDTO);
-                this.saveAudit(request, EmailStatus.SUCCESS, null);
-            } else if ("OCI".equalsIgnoreCase(mailIntegration)) {
-                EmailOciDTO ociDTO = adaptToOci(request);
-                this.logToConsole(ociDTO);
-                this.saveAudit(request, EmailStatus.SUCCESS, null);
-            } else {
-                throw new IllegalArgumentException(EmailServiceConstants.INVALID_INTEGRATION_TYPE);
-            }
+            validateRequest(request);
+            Object emailDto = adaptRequestToDto(request);
+            logToConsole(emailDto);
+            saveAudit(request, EmailStatus.SUCCESS, null, true);
         } catch (Exception ex) {
             log.error(EmailServiceConstants.EMAIL_AUDIT_FAILURE, ex.getMessage());
-            this.saveAudit(request, EmailStatus.FAILURE, ex.getMessage());
-            throw new RuntimeException(EmailServiceConstants.PROCESSING_ERROR + ": " + ex.getMessage());
+            saveAudit(request, EmailStatus.FAILURE, ex.getMessage(), false);
+            throw new RuntimeException(EmailServiceConstants.PROCESSING_ERROR + ": " + ex.getMessage(), ex);
         }
     }
 
@@ -59,61 +58,84 @@ public class EmailServiceImpl implements EmailService {
         return emailAuditRepository.findByStatus(status, pageable);
     }
 
-    private EmailAwsDTO adaptToAws(EmailRequestDTO request) {
-        return EmailAwsDTO.builder()
-                .recipient(request.getRecipient())
-                .recipientName(request.getRecipientName())
-                .sender(request.getSender())
-                .subject(request.getSubject())
-                .content(request.getContent())
-                .build();
+    /**
+     * Adapts the request to the appropriate DTO based on the integration type.
+     */
+    private Object adaptRequestToDto(EmailRequestDTO request) {
+        switch (mailIntegration.toUpperCase()) {
+            case "AWS":
+                return EmailAwsDTO.builder()
+                        .recipient(request.getRecipient())
+                        .recipientName(request.getRecipientName())
+                        .sender(request.getSender())
+                        .subject(request.getSubject())
+                        .content(request.getContent())
+                        .build();
+            case "OCI":
+                return EmailOciDTO.builder()
+                        .recipientEmail(request.getRecipient())
+                        .recipientName(request.getRecipientName())
+                        .senderEmail(request.getSender())
+                        .subject(request.getSubject())
+                        .body(request.getContent())
+                        .build();
+            default:
+                throw new IllegalArgumentException(EmailServiceConstants.INVALID_INTEGRATION_TYPE);
+        }
     }
 
-    private EmailOciDTO adaptToOci(EmailRequestDTO request) {
-        return EmailOciDTO.builder()
-                .recipientEmail(request.getRecipient())
-                .recipientName(request.getRecipientName())
-                .senderEmail(request.getSender())
-                .subject(request.getSubject())
-                .body(request.getContent())
-                .build();
-    }
-
+    /**
+     * Logs the DTO as a JSON string.
+     */
     private void logToConsole(Object dto) throws JsonProcessingException {
-        String json = objectMapper.writeValueAsString(dto);
-        log.info(EmailServiceConstants.EMAIL_AUDIT_SUCCESS, json);
+        log.info(EmailServiceConstants.EMAIL_AUDIT_SUCCESS, objectMapper.writeValueAsString(dto));
     }
 
-    private void saveAudit(EmailRequestDTO request, EmailStatus status, String errorMessage) {
-        EmailAudit emailAudit = EmailAudit.builder()
-                .recipient(request.getRecipient())
-                .recipientName(request.getRecipientName())
-                .sender(request.getSender())
-                .subject(request.getSubject())
-                .content(request.getContent())
-                .status(status)
-                .errorMessage(errorMessage)
-                .timestamp(LocalDateTime.now())
-                .integrationType(mailIntegration)
-                .build();
-
-        emailAuditRepository.save(emailAudit);
+    /**
+     * Validates the fields of the request against integration limits.
+     */
+    private void validateRequest(EmailRequestDTO request) {
+        IntegrationLimitsEnum limits = IntegrationLimitsEnum.valueOf(mailIntegration.toUpperCase());
+        validateField("recipient", request.getRecipient(), limits.getLimit("recipient"));
+        validateField("recipientName", request.getRecipientName(), limits.getLimit("recipientName"));
+        validateField("sender", request.getSender(), limits.getLimit("sender"));
+        validateField("subject", request.getSubject(), limits.getLimit("subject"));
+        validateField("content", request.getContent(), limits.getLimit("content"));
     }
 
-    private void validateRequest(EmailRequestDTO request, String integrationType) {
-        IntegrationLimitsEnum limits = IntegrationLimitsEnum.valueOf(integrationType.toUpperCase());
-        checkFieldLength("recipient", request.getRecipient(), limits.getLimit("recipient"));
-        checkFieldLength("recipientName", request.getRecipientName(), limits.getLimit("recipientName"));
-        checkFieldLength("sender", request.getSender(), limits.getLimit("sender"));
-        checkFieldLength("subject", request.getSubject(), limits.getLimit("subject"));
-        checkFieldLength("content", request.getContent(), limits.getLimit("content"));
-    }
-
-    private void checkFieldLength(String fieldName, String value, int maxLength) {
+    /**
+     * Validates the length of a single field.
+     */
+    private void validateField(String fieldName, String value, int maxLength) {
         if (value.length() > maxLength) {
             throw new IllegalArgumentException(
                     String.format(EmailServiceConstants.FIELD_EXCEEDS_LIMIT, mailIntegration.toUpperCase(), fieldName, maxLength)
             );
+        }
+    }
+
+    /**
+     * Saves the audit log to the database.
+     */
+    protected void saveAudit(EmailRequestDTO request, EmailStatus status, String errorMessage, boolean isEmailSent) {
+        try {
+            if (isEmailSent) validateRequest(request);
+            EmailAudit emailAudit = EmailAudit.builder()
+                    .recipient(request.getRecipient())
+                    .recipientName(request.getRecipientName())
+                    .sender(request.getSender())
+                    .subject(request.getSubject())
+                    .content(request.getContent())
+                    .status(status)
+                    .errorMessage(errorMessage)
+                    .timestamp(LocalDateTime.now())
+                    .integrationType(mailIntegration)
+                    .build();
+
+            emailAuditRepository.save(emailAudit);
+        } catch (DataIntegrityViolationException ex) {
+            log.error(EmailServiceConstants.DATA_INTEGRITY_VIOLATION_WHILE_SAVING_AUDIT, ex.getMessage());
+            throw new IllegalArgumentException("Validation failed: " + ex.getMessage(), ex);
         }
     }
 }
