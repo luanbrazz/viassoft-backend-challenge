@@ -1,0 +1,270 @@
+{
+	"info": {
+		"_postman_id": "940417d5-1de6-4824-b35c-4bb19590364d",
+		"name": "DESAFIO VIASOFT - Email Service API Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "22306407"
+	},
+	"item": [
+		{
+			"name": "POST /api/emails - Send Email",
+			"item": [
+				{
+					"name": "01 - Success (AWS)/(OCI)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient\": \"success.aws.oci@viassoft.com\",\n  \"recipientName\": \"AWS/OCI User\",\n  \"sender\": \"sender.aws@viassoft.com\",\n  \"subject\": \"Test Email AWS\",\n  \"content\": \"This is a test email for AWS integration.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/emails",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "02 - Failure (Invalid Email)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient\": \"invalid-email\",\n  \"recipientName\": \"Invalid User\",\n  \"sender\": \"sender.aws@viassoft.com\",\n  \"subject\": \"Test Invalid Email\",\n  \"content\": \"This email has an invalid recipient address.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/emails",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "03 - Failure (Field Exceeds Limit) - Runtime Exception",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient\": \"success.aws@viassoft.com\",\n  \"recipientName\": \"This name exceeds the allowed limit for recipient name field\",\n  \"sender\": \"sender.aws@viassoft.com\",\n  \"subject\": \"Test Subject\",\n  \"content\": \"This content is valid.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/emails",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "04 - Failure (Missing Required Field)- Validation Error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient\": \"success.aws@viassoft.com\",\n  \"subject\": \"Missing Sender\",\n  \"content\": \"This email is missing the sender field.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/emails",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GET /api/emails/audit - Fetch Audit Logs",
+			"item": [
+				{
+					"name": "01 - Success (Status SUCCESS)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/emails/audit?status=SUCCESS",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails",
+								"audit"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "SUCCESS"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "02 - Success (Status FAILURE)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/emails/audit?status=FAILURE",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails",
+								"audit"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "FAILURE"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "03 - Failure (Invalid Status) - Validation Error",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/emails/audit?status=INVALID",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails",
+								"audit"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "INVALID"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "04 - Success (Custom Page)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/emails/audit?status=SUCCESS&page=1&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"emails",
+								"audit"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "SUCCESS"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "{{base_url}}",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "base_url",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
